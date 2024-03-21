@@ -236,7 +236,7 @@ def update_serialdataframe(*, df: pd.DataFrame, r: int, c: int, value):
     ui.notify(f'Set ({r}, {c}) to {value}')
 
 readMagRealTime_init()
-reco_main()
+#reco_main()
 #close_Serial()
 
 #ui_serialDf = pd.DataFrame([1,2,3,4,5,6,7,8,9,10, 11, 12, 13,14,15,16])
@@ -288,7 +288,7 @@ with ui.expansion('Muments recommends you', value=True, icon='done').classes('w-
     iframePostfix = '?autoplay=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></center>'
     ui.html(iframePrefix+recmmendYoutubeID+iframePostfix).classes('items-center') """
    
-with ui.expansion('Serial Data', icon='done').classes('w-full items-center'):
+""" with ui.expansion('Serial Data', icon='done').classes('w-full items-center'):
     ui.label('contents')
     with ui.grid(rows=len(ui_serialDf .index)+1).classes('grid-flow-col'):
         for c, col in enumerate(ui_serialDf.columns):
@@ -301,40 +301,60 @@ with ui.expansion('Serial Data', icon='done').classes('w-full items-center'):
                 else:
                     cls = ui.input
                 cls(value=row, on_change=lambda event, r=r, c=c: update_serialdataframe(df=ui_serialDf, r=r, c=c, value=event.value))
-
+ """
 #Current Graph
 with ui.expansion('Graph',  value=True, icon='done').classes('w-full items-center'):
-    ui.image('./Images/body_icon.png').classes('w-40 h-40').classes('items-center')
+    ui.image('./Images/240321_sensor_position.png').classes('w-40 h-40').classes('items-center')
+    
+    graph_wdth = 5
+    graph_hght = 2
+    up_interval = 2
+
+             
     with ui.grid(columns=3):
-        up_interval = 2
-        graph_wdth = 5
-        graph_hght = 2
+
         line_plot1 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3)
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3)
         line_plot1.classes('w-full items-center')
 
-        ui.label("어깨 동작").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
+        ui.label("Shoulder").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
+
         line_plot6 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3) 
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3) 
         line_plot6.classes('w-full items-center')
-        
+
+    
+    with ui.grid(columns=3):
+
         line_plot2 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3)
-        ui.label("팔꿈치 동작").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3)
+        
+        ui.label("Elbow").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
+       
         line_plot7 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3)
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3)
         
+    
+    with ui.grid(columns=3):
+
         line_plot3 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3)     
-        ui.label("골반 동작").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
-        line_plot8 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3) 
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3)     
+
+        ui.label("Hip").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
         
+        line_plot8 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3) 
+        
+    
+    with ui.grid(columns=3):
+
         line_plot4 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3)
-        ui.label("무릎 동작").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3)
+        
+        ui.label("Knee").classes('w-full items-center').style('font-size: 200%; font-weight: 500').tailwind.font_weight('extrabold')
+
         line_plot9 = ui.line_plot(n=3, limit=20, figsize=(graph_wdth, graph_hght), update_every=up_interval) \
-            .with_legend(['Bx', 'By', 'Bz'], loc='upper center', ncol=3)
+            .with_legend(['Bx', 'By', 'Bz'], loc='upper right', ncol=3)
 
     def update_line_plot() -> None:
         #now = datetime.now()

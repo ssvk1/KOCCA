@@ -52,7 +52,7 @@ MAX_STACK_SIZE = 10
 MAX_packet_dataset = 5 # of Bx, By, Bz set
 T_send = 500 #ms
 CHAR_TERMINATION = b'\r\n'
-COM_PORT = 'COM30' # set to 0 when not used
+COM_PORT = 0 #'COM30' # set to 0 when not used
 
 ports = list(port_list.comports())
 
