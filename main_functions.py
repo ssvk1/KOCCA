@@ -46,7 +46,7 @@ process_pool_executor = concurrent.futures.ProcessPoolExecutor()
 
 
 #Global constants
-NUM_SENSOR = 10
+NUM_SENSOR = 8
 CONVERSION_FACTOR = 10 # for conversion
 MAX_STACK_SIZE = 10
 MAX_packet_dataset = 5 # of Bx, By, Bz set

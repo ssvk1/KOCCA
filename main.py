@@ -70,7 +70,7 @@ serData_tot.lData = make_sensormagData_df([])
 serdata_rec.lData = make_sensormagData_df([])
 def readMagRealTime_init():
     
-    t_interval = 1   
+    t_interval = 0.5 
         
     t_end = time.time() + t_interval
     while time.time() < t_end:
@@ -81,7 +81,7 @@ def readMagRealTime_init():
             #serData_tot.lMagData.append(serData_tmp.lMagData)
             
             serialString = read_Serial()
-            print(serialString)
+            #print(serialString)
             
             if not serialString.empty:
                 #thread pool (split 작업을 thread로 보냄)
@@ -114,7 +114,7 @@ def readMagRealTime_init():
                         global ui_serialDftemp
                         ui_serialDf = serData_tot.lData
                         ui_serialDftemp = serData_tmp.lData
-                        print(serData_tmp.lData)
+                        #print(serData_tmp.lData)
                         
 
                         ### no file saving (non-real time function)
@@ -184,7 +184,7 @@ def readMagRealTime():
 
         Recording_stat = Recocheckbox.value
         if Recording_stat:
-            file_write(serdata_rec.lData, ui_input.value, Recocheckbox.value)
+            file_write(serdata_rec.lData, ui_input.value+"_"+ui_inputth.value, Recocheckbox.value)
         else:
             serdata_rec.lData = serData_tmp.lData
 
@@ -224,9 +224,15 @@ ui_input = ui.input(label='Text', placeholder='start typing',
          validation={'Input too long': lambda value: len(value) < 100})
 ui.label().bind_text_from(ui_input, 'value')
 
+ui_inputth = ui.input(label='th Test', placeholder='start typing',
+         on_change=lambda e: {result.set_text('you typed: ' + e.value)},
+         validation={'Input too long': lambda value: len(value) < 100})
+ui.label().bind_text_from(ui_input, 'value')
+
+count = 0
 
 def Toggle_func(cur_recordst):
-        
+
     Recocheckbox.value = cur_recordst
 
     Recordstring =""
@@ -235,8 +241,6 @@ def Toggle_func(cur_recordst):
     else:
         Recordstring = "Saved File"
     ui.notify(Recordstring)
-
-    return Recording_stat
 
 class ToggleButton(ui.button):
 
