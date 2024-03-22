@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 import concurrent.futures
 
 
+
 from file_saving import *
 #from Ai_recommend import *
 from velocity_angleshift import *
@@ -33,43 +34,17 @@ from pathlib import Path
 from pandas.api.types import is_bool_dtype, is_numeric_dtype
 #from UI_back_main import *
 # menu
-is_pd_video = True
-#UI
-ui.add_head_html('''
-<style>
-@font-face {
-    font-family: 'PretendardJP-ExtraBold';
-    src: url('./fonts/PretendardJP-ExtraBold.woff') format('woff');
-}
 
-// declare a class which applies it
-.my-font {
-  font-family: 'PretendardJP-ExtraBold';
-  
-</style>
-''')
-
-app.add_static_file(local_file='./fonts/PretendardJP-ExtraBold.woff', url_path='./PretendardJP-Bold.woff')
-
-
-#Global constants
-""" NUM_SENSOR = 10
-CONVERSION_FACTOR = 10 # for conversion
-MAX_STACK_SIZE = 10
-MAX_packet_dataset = 5 # of Bx, By, Bz set
-T_send = 500 #ms
-CHAR_TERMINATION = b'\r\n'"""
-#COM_PORT = 'COM5' # set to 0 when not used
-        
+Init_csvfolder()
+csv_filename = ""
 
 start_t = t.time()
-infoRecoYoutube = []
-Youtubeid_pd = 0
+
 
 
 # We need an executor to schedule CPU-intensive tasks with `loop.run_in_executor()`.
 process_pool_executor = concurrent.futures.ProcessPoolExecutor()
-make_csv()
+
 open_Serial()    
 
 serData_tmp = SerialData()
@@ -78,6 +53,10 @@ serData_tmp.lData = []
 serData_tot = SerialData()
 serData_tot.lData = [] 
 
+serdata_rec = SerialData()
+serData_rec = []
+
+
 global ui_serialDf
 global ui_serialDftemp
 ui_serialDftemp = []
@@ -85,8 +64,10 @@ ui_serialDf = []
 
 global df_sensor_data_all 
 
+Recording_stat = False
 
 serData_tot.lData = make_sensormagData_df([])
+serdata_rec.lData = make_sensormagData_df([])
 def readMagRealTime_init():
     
     t_interval = 1   
@@ -119,6 +100,7 @@ def readMagRealTime_init():
                         global serData_tmp
                         global serData_tot
                         
+                        
                         serData_tmp.lData = cur_Bmagdata                                  
             
                         serData_tmp.decrypt()
@@ -133,12 +115,23 @@ def readMagRealTime_init():
                         ui_serialDf = serData_tot.lData
                         ui_serialDftemp = serData_tmp.lData
                         print(serData_tmp.lData)
+                        
+
+                        ### no file saving (non-real time function)
 
         except: SyntaxError or AttributeError #when serial not connected
-        
-    isinit = False    
-    write_csv_filename(serData_tot.lData, "Pretest")
 
+dtimefile = time.strftime("%Y%m%d-%H%M%S")
+
+def file_write(dfname, filename, recoflag):
+    
+    if recoflag:
+        save_path = file_writefolder + dtimefile + "_" + filename+file_extension
+        outfile = open(save_path, 'wb')
+        dfname.to_csv(outfile, sep=',', mode='a', header=False)
+        outfile.close()
+#df_rec = pd.DataFrame()
+  
 def readMagRealTime():
     #t_interval = 1
     #t_end = time.time() + t_interval
@@ -172,77 +165,46 @@ def readMagRealTime():
 
                     serData_tmp.lData = add_time_col(serData_tmp.lData, cur_time(start_t))
 
-                    serData_tmp.lData = add_node_col(serData_tmp.lData, cur_pkt_No)                       
+                    serData_tmp.lData = add_node_col(serData_tmp.lData, cur_pkt_No)     
+                    
                     serData_tot.lData = accumulate_sensor_Data(serData_tot.lData, serData_tmp.lData)
                     #header 없이 입력됨
+
+
                     global ui_serialDf
                     global ui_serialDftemp
                     ui_serialDf = serData_tot.lData
                     ui_serialDftemp = serData_tmp.lData
                     print(serData_tmp.lData)
-                    write_csv_filename(serData_tot.lData, "Pretest")
-    except: SyntaxError or AttributeError #when serial not connected
+                    
+                    
+                    serdata_rec.lData = accumulate_sensor_Data(serdata_rec.lData, serData_tmp.lData)
+
+            
+
+        Recording_stat = Recocheckbox.value
+        if Recording_stat:
+            file_write(serdata_rec.lData, ui_input.value, Recocheckbox.value)
+        else:
+            serdata_rec.lData = serData_tmp.lData
+
+
         
-    write_csv_filename(serData_tot.lData, "Pretest")
+                                
+    except: SyntaxError or AttributeError #when serial not connected
 
 
+        
 
-def reco_main():
-    #if (serData_tot.lData is not None) or not serData_tmp.lData.empty():
-    mvel, mshift = vel_ang_shift(serData_tot.lData)
-
-    if mvel == 0 or mshift == 0:
-        mvel = 0.5
-        mshift = 0.5
-
-    print("mean velocity:" + str(mvel))
-    print("mean shift:" + str(mshift))
-
-    small_no = 50
-    score_happy = 1/abs(mshift) + abs(mvel) + small_no
-    score_anger =  1/abs(mshift)  + 1/abs(mvel) + small_no
-    score_fear =  abs(mshift)  + 1/abs(mvel) + small_no
-    score_sad =  abs(mshift)  + abs(mvel) + small_no
-
-    #score_happy = 1
-    #score_anger = 0
-    #score_fear = 0
-    #score_sad = 0
-
-    """ score_happy = 0.4 * abs(mshift) + 0.6 * abs(mvel)
-    score_sad =  0.3 * abs(mshift)  + 0.7 * abs(mvel)
-    score_fear =  0.7 * abs(mshift)  + 0.3 * abs(mvel)
-    score_anger =  0.4 * abs(mshift)  + 0.6 * abs(mvel) """
-
-
-    #max_score = max([abs(score_happy),abs(score_sad),abs(score_fear),abs(score_anger)])
-
-    #emotionscore=np.array([score_happy,score_sad,score_fear,score_anger]).reshape(1,-1) #Emotion vector
-
-    #global infoRecoYoutubeId, infoRecoYoutube, RecoYoutubeResults, RecoMsg, Emotionresult, Youtubeid_pd
-    
-    #infoRecoYoutube, RecoYoutubeResults, RecoMsg, Emotionresult, Youtubeid_pd= recommendSong(emotionscore)
-
-    #if Youtubeid_pd:
-    #    infoRecoYoutubeId = Youtubeid_pd
-    #else:
-    #    infoRecoYoutubeId = get_YoutubeInfo(infoRecoYoutube)
-
-    #infoRecoYoutubeId = 'hdbQ9jrboP0'
-    #print(infoRecoYoutubeId)
 
 def update_serialdataframe(*, df: pd.DataFrame, r: int, c: int, value):
     df.iat[r, c] = value
     ui.notify(f'Set ({r}, {c}) to {value}')
 
+## Front end
+
 readMagRealTime_init()
-#reco_main()
-#close_Serial()
 
-#ui_serialDf = pd.DataFrame([1,2,3,4,5,6,7,8,9,10, 11, 12, 13,14,15,16])
-#ui_serialDf = thread_serialreaderdf(read_Serial())
-
-#ui.image('./Images/Upper_bar_bg.jpg').classes('h-20 items-end')
 with ui.row().classes('w-full items-center'):
     result = ui.label().classes('mr-auto')
     with ui.button(icon='menu'):
@@ -256,53 +218,50 @@ with ui.row().classes('w-full items-center'):
 
 ui.image('./Images/Muments_logo.jpg').classes('w-40 h-40').classes('items-center')
 
-#topVidUrl = './media/top_perform_vid.mp4'
-#topVidUrl = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4'
-#with ui.video(src=topVidUrl, muted=True, loop=True, autoplay=True).classes('w-full items-center'):
-#    ui.label('Nice!').classes('absolute-bottom text-subtitle2 text-center color-white')
 
-#with ui.splitter().classes('w-full items-center') as splitter:
-    #with splitter.before:
-    #Current serial
-    
-""" with ui.expansion('Emotion ', value=True, icon='done').classes('w-full items-center'):
-    emoString = '아마도' +str(Emotionresult)+'한 기분'
-    ui.label(emoString).classes('text-center').style('font-family: PretendardJP-ExtraBold').style('font-size: 200%; font-weight: 300').tailwind.font_weight('extrabold')
-    #infoRecoYoutube, RecoYoutubeResults, RecoMsg, Emotionresult
-    
-with ui.expansion('Muments recommends you', value=True, icon='done').classes('w-full items-center'):
-    ui.label('Youtube #'+infoRecoYoutubeId).classes('text-center').style('font-size: 200%; font-weight: 300').tailwind.font_weight('extrabold')
-    ui.label(RecoMsg).classes('text-center').style('font-size: 200%; font-weight: 300').tailwind.font_weight('extrabold')
-    recmmendYoutubeID = infoRecoYoutubeId
- """
-    #iframePrefix = '<iframe width="420" height="345" src="http://www.youtube.com/embed/'
-    #iframePostfix = '?autoplay=1&mute=0&cc_lang_pref=fr&cc_load_policy=0" frameborder="0" allowfullscreen></iframe>'
+ui_input = ui.input(label='Text', placeholder='start typing',
+         on_change=lambda e: {result.set_text('you typed: ' + e.value)},
+         validation={'Input too long': lambda value: len(value) < 100})
+ui.label().bind_text_from(ui_input, 'value')
 
-    #iframePrefix = '<iframe id="ytplayer" type="text/html" width="640" height="360"  src="https://www.youtube.com/embed/'
-    #iframePostfix = '?autoplay=1&mute=0&cc_lang_pref=fr&cc_load_policy=0";"  frameborder="0"></iframe>'
 
-    #iframePrefix = '<iframe id="ytplayer" type="text/html" width="640" height="360"  src="https://www.youtube.com/embed/'
-    #iframePostfix = '?autoplay=1&mute=0&cc_lang_pref=fr&cc_load_policy=0";"  frameborder="0"></iframe>'
+def Toggle_func(cur_recordst):
+        
+    Recocheckbox.value = cur_recordst
 
-"""     iframePrefix = '<center><iframe id="my_youtube" width="560" height="315" src="https://www.youtube.com/embed/'
-    iframePostfix = '?autoplay=1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></center>'
-    ui.html(iframePrefix+recmmendYoutubeID+iframePostfix).classes('items-center') """
-   
-""" with ui.expansion('Serial Data', icon='done').classes('w-full items-center'):
-    ui.label('contents')
-    with ui.grid(rows=len(ui_serialDf .index)+1).classes('grid-flow-col'):
-        for c, col in enumerate(ui_serialDf.columns):
-            ui.label(col).classes('font-bold')
-            for r, row in enumerate(ui_serialDf .loc[:, col]):
-                if is_bool_dtype(ui_serialDf [col].dtype):
-                    cls = ui.checkbox
-                elif is_numeric_dtype(ui_serialDf [col].dtype):
-                        cls = ui.number
-                else:
-                    cls = ui.input
-                cls(value=row, on_change=lambda event, r=r, c=c: update_serialdataframe(df=ui_serialDf, r=r, c=c, value=event.value))
- """
-#Current Graph
+    Recordstring =""
+    if Recording_stat:
+        Recordstring = " Now Recording @ " + csv_filename + ".csv"
+    else:
+        Recordstring = "Saved File"
+    ui.notify(Recordstring)
+
+    return Recording_stat
+
+class ToggleButton(ui.button):
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._state = False
+        self.on('click', self.toggle)
+               
+    def toggle(self) -> None:
+        """Toggle the button state."""
+        self._state = not self._state        
+        Toggle_func(self._state)
+        self.update()
+
+    def update(self) -> None:
+        self.props(f'color={"red" if self._state else "green"}')
+        super().update()      
+
+ToggleButton('Record').classes('rounded-full w-16 h-16 ml-4')
+
+Recocheckbox = ui.checkbox('Recording check')
+ui.label('Checked!').bind_visibility_from(Recocheckbox, 'value')
+
+
+
 with ui.expansion('Graph',  value=True, icon='done').classes('w-full items-center'):
     ui.image('./Images/240321_sensor_position.png').classes('w-40 h-40').classes('items-center')
     
